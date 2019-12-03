@@ -4,7 +4,7 @@ const TABLE_LENGTH = 45;
 const FRONT_FEET_X = -TABLE_LENGTH + 35;
 const BACK_FEET_X = TABLE_LENGTH - 16;
 const LEFT_FEET_Z = 0;
-const RIGHT_FEET_Z = 15;
+const RIGHT_FEET_Z = TABLE_WIDTH - 9;
 const TABLE_FEET_Y = 0;
 const TABLE_FEET_WIDTH = 2.5;
 const TABLE_FEET_HEIGHT = 15;
@@ -36,7 +36,8 @@ renderer.shadowMap.enabled = true;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 1000);
 // camera.position.set(-10, 20, 50);
-camera.position.set(-50, 25, 20); // camera position
+// camera.position.set(-50, 25, 20); // camera position
+camera.position.set(-5, 50, 2); // camera view from above
 
 const ambientLight = new THREE.AmbientLight(0x909090);
 const spotLight = new THREE.SpotLight(LIGHT_COLOR);
@@ -90,9 +91,31 @@ class Sphere { //    this class will be used for the creation of the biliard bal
         return this.mesh;
     }
 }
-
-
+//  create the lightbulb 
 const lightBulb = new Sphere(LIGHTBULB_RADIUS, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHT_COLOR, LIGHT_X_POSITION, LIGHT_Y_POSITION, LIGHT_Z_POSITION);
+
+//  create balls
+const BALLS_RADIUS = 1.2;
+const BALLS_Y_POSITION = 9.7;
+const NUMBER_OF_BALLS = 8;
+
+for(let i=0; i < NUMBER_OF_BALLS; i++){
+    let randX = Math.floor(Math.random() * 29);
+    let randZ = Math.floor(Math.random() * 17);
+    const plusOrMinus = Math.random() < 0.5 ? -1 : 1;
+    if(randX >= 0 && randX <= 11){
+        randX *= plusOrMinus;
+    }
+
+    if(randZ >= 0 && randZ <= 2.5){
+        randZ *= plusOrMinus;
+    }
+
+        
+    biliardTable.add(
+        new Sphere(BALLS_RADIUS, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, "red", randX, BALLS_Y_POSITION, randZ)
+    );
+}
 
 //  creating the feet of the table
 const leftFrontFoot = new Box(TABLE_FEET_WIDTH, TABLE_FEET_HEIGHT, TABLE_FEET_DEPTH, TABLE_FEET_COLOR, FRONT_FEET_X, TABLE_FEET_Y, LEFT_FEET_Z);
