@@ -16,7 +16,7 @@ const TABLE_BORDERS_Y = 9;
 const BORDER_HEIGHT = 3;
 
 const TABLE_FEET_COLOR = "#663300";
-const LIGHT_COLOR = "#f5f1ef";
+const LIGHT_COLOR = "#ffffef";
 const TABLE_COLOR = "#298031";
 
 const LIGHT_X_POSITION = 0;
@@ -25,6 +25,17 @@ const LIGHT_Z_POSITION = 0;
 
 const LIGHTBULB_RADIUS = 1;
 const LIGHTBULB_SEGMENT_WIDTH_HEIGHT = 32;
+
+const textures = [
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball8.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball9.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball10.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball11.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball12.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball13.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball14.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball15.jpg'), side: THREE.DoubleSide }),
+];
 
 //* Initialize webGL with camera and lights
 const canvas = document.getElementById("mycanvas");
@@ -36,8 +47,8 @@ renderer.shadowMap.enabled = true;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 1000);
 // camera.position.set(-10, 20, 50);
-// camera.position.set(-50, 25, 20); // camera position
-camera.position.set(-5, 50, 2); // camera view from above
+camera.position.set(-50, 25, 20); // camera position
+// camera.position.set(-5, 50, 2); // camera view from above
 
 const ambientLight = new THREE.AmbientLight(0x909090);
 const spotLight = new THREE.SpotLight(LIGHT_COLOR);
@@ -60,16 +71,19 @@ class Box { //   this class is used for creating the feet and the borders of the
     constructor(width, height, depth, color, xPosition, yPosition, zPosition) {
         this.mesh = new THREE.Mesh(
             new THREE.BoxGeometry(width, height, depth),
-            new THREE.MeshPhongMaterial({ color: color })
+            new THREE.MeshStandardMaterial({ color: color })
         );
+
+        this.meshBoxHelper = new THREE.BoxHelper(this.mesh, "red");
+        this.meshBBox = new THREE.Box3();
+        this.meshBBox.setFromObject(this.meshBoxHelper);
+
         this.mesh.position.x = xPosition;
         this.mesh.position.y = yPosition;
         this.mesh.position.z = zPosition;
 
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
-
-        return this.mesh;
     }
 }
 //  on the helper axis 
@@ -78,44 +92,47 @@ class Box { //   this class is used for creating the feet and the borders of the
 //  y - green arrow 
 
 class Sphere { //    this class will be used for the creation of the biliard balls  
-    constructor(radius, widthSegment, heightSegment, color, xPosition, yPosition, zPosition) {
+    constructor(radius, widthSegment, heightSegment, color, texture, xPosition, yPosition, zPosition) {
+
         this.mesh = new THREE.Mesh(
             new THREE.SphereGeometry(radius, widthSegment, heightSegment),
-            new THREE.MeshPhongMaterial({ color: color })
+            texture
         );
+
+        this.meshBoxHelper = new THREE.BoxHelper(this.mesh, "red");
+        this.meshBBox = new THREE.Box3();
+        this.meshBBox.setFromObject(this.meshBoxHelper);
 
         this.mesh.position.x = xPosition;
         this.mesh.position.y = yPosition;
         this.mesh.position.z = zPosition;
 
-        return this.mesh;
+        this.mesh.castShadow = true;
+        this.mesh.receiveShadow = true;
     }
 }
-//  create the lightbulb 
-const lightBulb = new Sphere(LIGHTBULB_RADIUS, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHT_COLOR, LIGHT_X_POSITION, LIGHT_Y_POSITION, LIGHT_Z_POSITION);
 
-//  create balls
+//  create the lightbulb 
+const lightBulb = new Sphere(LIGHTBULB_RADIUS, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHT_COLOR, undefined, LIGHT_X_POSITION, LIGHT_Y_POSITION, LIGHT_Z_POSITION);
+// lightBulb.mesh.material.color(LIGHT_COLOR);
+console.log("material: " + lightBulb.mesh.material);
+lightBulb.mesh.castShadow = false;
+lightBulb.mesh.receiveShadow = false;
+
+//  create balls at random locations
 const BALLS_RADIUS = 1.2;
 const BALLS_Y_POSITION = 9.7;
 const NUMBER_OF_BALLS = 8;
 
-for(let i=0; i < NUMBER_OF_BALLS; i++){
-    let randX = Math.floor(Math.random() * 29);
-    let randZ = Math.floor(Math.random() * 17);
-    const plusOrMinus = Math.random() < 0.5 ? -1 : 1;
-    if(randX >= 0 && randX <= 11){
-        randX *= plusOrMinus;
-    }
+let arrOfBalls = [];
+generateBalls();
 
-    if(randZ >= 0 && randZ <= 2.5){
-        randZ *= plusOrMinus;
-    }
-
-        
-    biliardTable.add(
-        new Sphere(BALLS_RADIUS, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, "red", randX, BALLS_Y_POSITION, randZ)
-    );
-}
+//  adding balls to the scene
+arrOfBalls.forEach((sphere) => {
+    biliardTable.add(sphere.mesh);
+    // biliardTable.add(sphere.meshBoxHelper);
+    // sphere.meshBoxHelper.update(); // updating position of ball box helper 
+});
 
 //  creating the feet of the table
 const leftFrontFoot = new Box(TABLE_FEET_WIDTH, TABLE_FEET_HEIGHT, TABLE_FEET_DEPTH, TABLE_FEET_COLOR, FRONT_FEET_X, TABLE_FEET_Y, LEFT_FEET_Z);
@@ -135,10 +152,61 @@ const rightBorder = new Box(TABLE_LENGTH, BORDER_HEIGHT, GENERIC_BORDER_DEPTH, T
 const roomFloor = new Box(370, 1, 350, "gray", 0, -8, 0);
 
 //  adding biliard table objects to biliardTable object
-[backBorder, frontBorder, leftBorder, rightBorder, leftBackFoot, leftFrontFoot, rightBackFoot, rightFrontFoot, tableTop].forEach(object => biliardTable.add(object));
+[backBorder, frontBorder, leftBorder, rightBorder, leftBackFoot, leftFrontFoot, rightBackFoot, rightFrontFoot, tableTop].forEach(object => {
+    biliardTable.add(object.mesh);
+    // biliardTable.add(object.meshBoxHelper);
+    // object.meshBoxHelper.update();
+});
 
 //  adding objects to the scene
-[biliardTable, lightBulb, spotLight, roomFloor].forEach(object => scene.add(object));
+[biliardTable, lightBulb.mesh, roomFloor.mesh].forEach(object => scene.add(object));
+
+function generateBalls() {
+    for (let i = 0; i < NUMBER_OF_BALLS; i++) {
+        let { randX, randZ } = getCoordinates();
+        const biliardBall = new Sphere(BALLS_RADIUS, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, "red", textures[i], randX, BALLS_Y_POSITION, randZ);
+        //  check if the balls are intersecting
+        if (arrOfBalls.length > 0) {
+            for (let index = 0; index < arrOfBalls.length; index++) {
+                let dist = arrOfBalls[index].mesh.position.clone().sub(biliardBall.mesh.position);
+                while (dist.length() < 2 * BALLS_RADIUS) {
+                    let { randX, randZ } = getCoordinates();
+                    biliardBall.mesh.position.x = randX;
+                    biliardBall.mesh.position.z = randZ;
+                    dist = arrOfBalls[index].mesh.position.clone().sub(biliardBall.mesh.position);
+                    index = 0;
+                }
+            }
+        }
+        arrOfBalls.push(biliardBall);
+    }
+}
+
+function getCoordinates() {
+    let randX = Math.floor(Math.random() * 29);
+    let randZ = Math.floor(Math.random() * 17);
+
+    const plusOrMinusX = Math.random() < 0.5 ? -1 : 1;
+    const plusOrMinusZ = Math.random() < 0.5 ? -1 : 1;
+
+    if (randX >= 0 && randX <= 11) {
+        randX *= plusOrMinusX;
+    }
+
+    if (randZ >= 0 && randZ <= 2.5) {
+        randZ *= plusOrMinusZ;
+    }
+    return { randX, randZ };
+}
+
+//  generate movement of the balls 
+
+//  make the balls rotate
+
+//  detect collision of the balls with the table borders
+
+//  detect collision of the balls with other balls
+
 
 //* Render loop
 const controls = new THREE.TrackballControls(camera, canvas);
@@ -146,8 +214,9 @@ const controls = new THREE.TrackballControls(camera, canvas);
 function render() {
     requestAnimationFrame(render);
 
+    // updateBoxHelpers();
+
     controls.update();
     renderer.render(scene, camera);
 }
-
 render();
