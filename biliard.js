@@ -1,5 +1,7 @@
 const BALLS_SPEED = 3;
 const FRICTION_AND_REFLECTION = 0.2;
+const CONTACT_FRICTION = 0.3;
+
 
 const TABLE_TOP_WIDTH = 25;
 const TABLE_TOP_LENGTH = 45;
@@ -194,7 +196,7 @@ function generateXYCoordinates() {
 
 let arrOfBalls = [];
 const arrOfAxes = [];
-
+const arrOfOmega = [];
 function plusOrMinus() {
     const plusOrMinusX = Math.random() < 0.5 ? -1 : 1;
     const plusOrMinusZ = Math.random() < 0.5 ? -1 : 1;
@@ -233,8 +235,9 @@ function generateBalls() {
             }
         }
         arrOfBalls.push(biliardBall);
-        arrOfAxes.push(new THREE.Vector3(0, 0, 1));
+        arrOfAxes.push(new THREE.Vector3());
         arrOfAxes[i].cross(arrOfVelocities[i]).normalize();
+        arrOfOmega[i]
     }
 }
 generateBalls();
@@ -249,50 +252,53 @@ function updateBoxHelpers() {
     });
 }
 
-function ballRotation(index, dt) {
-    const dR = new THREE.Matrix4(); // delta-rotational matrix
-    arrOfAxes[index].set(0, 0, 1);
-    arrOfAxes[index].cross(arrOfVelocities[index]).normalize();
-    let ballOmega = arrOfVelocities[index].length() / BALLS_RADIUS;
-    dR.makeRotationAxis(arrOfAxes[index], ballOmega * dt);
-    arrOfBalls[index].mesh.matrix.premultiply(dR);
-
-    //translation along a straight line
-    arrOfBalls[index].mesh.position.add(arrOfVelocities[index].clone().multiplyScalar(dt));
-    arrOfBalls[index].mesh.matrix.setPosition(arrOfBalls[index].mesh.position);
-}
-
-function rotationAfterCollision(index) {
-    arrOfAxes[index] = new THREE.Vector3(0, 0, 1);
-    arrOfAxes[index].cross(arrOfVelocities[index].clone().normalize());
-}
-
 function reflection(dt) {
     let index = 0;
     arrOfBalls.forEach(ball => {
-        ballRotation(index, dt);
 
         if (ball.meshBBox.intersectsBox(backBorder.meshBBox)) {
             arrOfVelocities[index].x = -Math.abs(arrOfVelocities[index].x - arrOfVelocities[index].x * FRICTION_AND_REFLECTION);
-            rotationAfterCollision(index);
         }
 
         if (ball.meshBBox.intersectsBox(frontBorder.meshBBox)) {
             arrOfVelocities[index].x = Math.abs(arrOfVelocities[index].x - arrOfVelocities[index].x * FRICTION_AND_REFLECTION);
-            rotationAfterCollision(index);
         }
 
         if (ball.meshBBox.intersectsBox(rightBorder.meshBBox)) {
             arrOfVelocities[index].z = -Math.abs(arrOfVelocities[index].z - arrOfVelocities[index].z * FRICTION_AND_REFLECTION);
-            rotationAfterCollision(index);
         }
 
         if (ball.meshBBox.intersectsBox(leftBorder.meshBBox)) {
             arrOfVelocities[index].z = Math.abs(arrOfVelocities[index].z - arrOfVelocities[index].z * FRICTION_AND_REFLECTION);
-            rotationAfterCollision(index);
         }
+
+        const dR = new THREE.Matrix4(); // delta-rotational matrix
+        arrOfAxes[index].set(0, 1, 0);
+        arrOfAxes[index].cross(arrOfVelocities[index]).normalize();
+        let ballOmega = arrOfVelocities[index].length() / BALLS_RADIUS;
+        dR.makeRotationAxis(arrOfAxes[index], ballOmega * dt);
+        arrOfBalls[index].mesh.matrix.premultiply(dR);
+
+        //translation along a straight line
+        arrOfBalls[index].mesh.position.add(arrOfVelocities[index].clone().multiplyScalar(dt));
+        arrOfBalls[index].mesh.matrix.setPosition(arrOfBalls[index].mesh.position);
+
+
         index++;
     });
+
+    //now it's "collision of balls against each other"
+    for (let i = 0; i < arrOfBalls.length - 1; i++) {
+        //j tells which ball should i-th ball be compare with (it's about distance between them)
+        for (let j = i + 1; j < arrOfBalls.length; j++) {
+            if (arrOfBalls[i].mesh.position.distanceTo(arrOfBalls[j].mesh.position) < 2 * BALLS_RADIUS) {
+                let tSpeed = arrOfVelocities[i].clone().multiplyScalar(1 - CONTACT_FRICTION * dt); 	//reducing velocity by 30%
+                arrOfVelocities[i] = arrOfVelocities[j].clone().multiplyScalar(1 - CONTACT_FRICTION * dt);	//reducing velocity by 30%
+                arrOfVelocities[j] = tSpeed;
+            }
+        }
+    }
+
 }
 
 function frictionWithDesk(dt) { //  updates balls speed according to friction
@@ -302,10 +308,6 @@ function frictionWithDesk(dt) { //  updates balls speed according to friction
         index++;
     });
 }
-
-//  detect collision of the balls with other balls
-
-//  remove axes helper
 
 
 //  adding biliard table objects to biliardTable object
@@ -331,7 +333,6 @@ function render() {
 
     const dt = computerClock.getDelta();
 
-    // ballMovement(arrOfVelocities);
     frictionWithDesk(dt);
     updateBoxHelpers();
     reflection(dt);
