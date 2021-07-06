@@ -1,4 +1,4 @@
-const BALLS_SPEED = 2;
+const BALLS_SPEED = 1;
 const BORDER_TABLE_FRICTION = 0.2;
 const CONTACT_FRICTION = 0.3;
 const TABLE_TOP_WIDTH = 25;
@@ -26,7 +26,7 @@ const LIGHT_Y_POSITION = 30;
 const LIGHT_Z_POSITION = 0;
 const LIGHTBULB_RADIUS = 1;
 const LIGHTBULB_SEGMENT_WIDTH_HEIGHT = 64;
-const FACTOR_SPEED = 20;
+const FACTOR_SPEED = 100;
 const BALLS_RADIUS = 1.1;
 const BALLS_Y_POSITION = 9.7;
 const NUMBER_OF_BALLS = 8;
@@ -39,19 +39,37 @@ const WIRE_GIRTH = 0.3;
 const WIRE_LENGTH = CEILING_Y_POSITION - 30;
 
 const textures = [
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball8.jpg'), side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball9.jpg'), side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball10.jpg'), side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball11.jpg'), side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball12.jpg'), side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball13.jpg'), side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball14.jpg'), side: THREE.DoubleSide }),
-    new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('textures/Ball15.jpg'), side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({map: new THREE.TextureLoader().load('textures/Ball8.jpg'), side: THREE.DoubleSide}),
+    new THREE.MeshStandardMaterial({map: new THREE.TextureLoader().load('textures/Ball9.jpg'), side: THREE.DoubleSide}),
+    new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load('textures/Ball10.jpg'),
+        side: THREE.DoubleSide
+    }),
+    new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load('textures/Ball11.jpg'),
+        side: THREE.DoubleSide
+    }),
+    new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load('textures/Ball12.jpg'),
+        side: THREE.DoubleSide
+    }),
+    new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load('textures/Ball13.jpg'),
+        side: THREE.DoubleSide
+    }),
+    new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load('textures/Ball14.jpg'),
+        side: THREE.DoubleSide
+    }),
+    new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load('textures/Ball15.jpg'),
+        side: THREE.DoubleSide
+    }),
 ];
 
 //* Initialize webGL with camera and lights
 const canvas = document.getElementById("mycanvas");
-const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+const renderer = new THREE.WebGLRenderer({canvas: canvas});
 renderer.setClearColor('rgb(255,255,255)');
 renderer.shadowMap.enabled = true;
 
@@ -59,7 +77,6 @@ renderer.shadowMap.enabled = true;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 1000);
 camera.position.set(-43, 31, 22); // camera the final view
-// camera.position.set(-24, 43, 10); // camera view from above
 
 const ambientLight = new THREE.AmbientLight(LIGHT_COLOR);
 const spotLight = new THREE.SpotLight(LIGHT_COLOR);
@@ -70,9 +87,6 @@ spotLight.position.set(LIGHT_X_POSITION, LIGHT_Y_POSITION, LIGHT_Z_POSITION);
 scene.add(spotLight);
 scene.add(ambientLight);
 
-const axesHelper = new THREE.AxesHelper(5);
-scene.add(axesHelper);
-
 const biliardTable = new THREE.Object3D();
 biliardTable.position.set(-10, 0, -6);
 
@@ -80,7 +94,7 @@ class Box { //   this class is used for creating the feet and the borders of the
     constructor(width, height, depth, color, xPosition, yPosition, zPosition) {
         this.mesh = new THREE.Mesh(
             new THREE.BoxGeometry(width, height, depth),
-            new THREE.MeshStandardMaterial({ color: color })
+            new THREE.MeshStandardMaterial({color: color})
         );
 
         this.meshBoxHelper = new THREE.BoxHelper(this.mesh, "red");
@@ -102,7 +116,7 @@ class Box { //   this class is used for creating the feet and the borders of the
     }
 }
 
-class Sphere { //    this class will be used for the creation of the biliard balls  
+class Sphere { //    this class is used for the creation of the biliard balls  
     constructor(radius, widthSegment, heightSegment, texture, xPosition, yPosition, zPosition) {
 
         this.radius = radius;
@@ -110,7 +124,7 @@ class Sphere { //    this class will be used for the creation of the biliard bal
         if (texture === LIGHT_COLOR) {  //  special case for the lightbulb
             this.mesh = new THREE.Mesh(
                 new THREE.SphereGeometry(this.radius, widthSegment, heightSegment),
-                new THREE.MeshStandardMaterial({ color: LIGHT_COLOR })
+                new THREE.MeshStandardMaterial({color: LIGHT_COLOR})
             );
         } else {
             this.mesh = new THREE.Mesh(
@@ -132,6 +146,7 @@ class Sphere { //    this class will be used for the creation of the biliard bal
 
         this.mesh.matrixAutoUpdate = false;
     }
+
     updateBox() {
         this.meshBoxHelper.setFromObject(this.mesh);
         this.meshBoxHelper.update();
@@ -164,13 +179,12 @@ const roomFloor = new Box(ROOM_WIDTH, 1, ROOM_LENGTH, "gray", 0, FLOOR_Y_POSITIO
 const roomCeiling = new Box(ROOM_WIDTH, 1, ROOM_LENGTH, "gray", 0, CEILING_Y_POSITION, 0);
 const bulbWire = new Box(WIRE_GIRTH, WIRE_LENGTH, WIRE_GIRTH, "black", LIGHT_X_POSITION, BULBWIRE_Y_POSITION, LIGHT_Z_POSITION);
 
-
 //  create balls at random locations
 function generateXYCoordinates() {
     let randX = Math.floor(Math.random() * 29);
     let randZ = Math.floor(Math.random() * 17);
 
-    const { plusOrMinusX, plusOrMinusZ } = plusOrMinus();
+    const {plusOrMinusX, plusOrMinusZ} = plusOrMinus();
 
     if (randX >= 0 && randX <= 11) {
         randX *= plusOrMinusX;
@@ -179,24 +193,26 @@ function generateXYCoordinates() {
     if (randZ >= 0 && randZ <= 2.5) {
         randZ *= plusOrMinusZ;
     }
-    return { randX, randZ };
+    return {randX, randZ};
 }
 
 let arrOfBalls = [];
 const arrOfAxes = [];
 const arrOfOmega = [];
+
 function plusOrMinus() {
     const plusOrMinusX = Math.random() < 0.5 ? -1 : 1;
     const plusOrMinusZ = Math.random() < 0.5 ? -1 : 1;
-    return { plusOrMinusX, plusOrMinusZ };
+    return {plusOrMinusX, plusOrMinusZ};
 }
 
 const arrOfVelocities = generateRandomVelocities();
+
 function generateRandomVelocities() {
     const SLOW_DOWN = 2;
     const arrOfVelocities = [];
     for (let i = 0; i < NUMBER_OF_BALLS; i++) {
-        const { plusOrMinusX, plusOrMinusZ } = plusOrMinus();
+        const {plusOrMinusX, plusOrMinusZ} = plusOrMinus();
         arrOfVelocities.push(new THREE.Vector3(BALLS_SPEED * Math.random() * plusOrMinusX, 0, BALLS_SPEED * Math.random() * plusOrMinusZ).divideScalar(SLOW_DOWN));
         // arrOfVelocities.push(new THREE.Vector3(BALLS_SPEED * Math.random() * plusOrMinusX, 0, BALLS_SPEED * Math.random() * plusOrMinusZ));
     }
@@ -205,7 +221,7 @@ function generateRandomVelocities() {
 
 function generateBalls() {
     for (let i = 0; i < NUMBER_OF_BALLS; i++) {
-        let { randX, randZ } = generateXYCoordinates();
+        let {randX, randZ} = generateXYCoordinates();
         const biliardBall = new Sphere(BALLS_RADIUS, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, LIGHTBULB_SEGMENT_WIDTH_HEIGHT, textures[i], randX, BALLS_Y_POSITION, randZ);
         if (arrOfBalls.length > 0) {
             for (let index = 0; index < arrOfBalls.length; index++) {
@@ -213,7 +229,7 @@ function generateBalls() {
                 let dist = arrOfBalls[index].mesh.position.clone().sub(biliardBall.mesh.position);
                 //  if the coordinates of the new ball coincide with any of those that are on the table, generate new coordinates
                 while (dist.length() < 2 * BALLS_RADIUS) {
-                    let { randX, randZ } = generateXYCoordinates();
+                    let {randX, randZ} = generateXYCoordinates();
                     biliardBall.mesh.position.x = randX;
                     biliardBall.mesh.position.z = randZ;
                     dist = arrOfBalls[index].mesh.position.clone().sub(biliardBall.mesh.position);
@@ -229,6 +245,7 @@ function generateBalls() {
         arrOfOmega[i] = arrOfVelocities[i].length() / BALLS_RADIUS;
     }
 }
+
 generateBalls();
 
 //  adding biliard table objects to biliardTable object
@@ -243,7 +260,6 @@ arrOfBalls.forEach((ball) => {
 
 //  adding objects to the scene
 [biliardTable, lightBulb.mesh, roomFloor.mesh, roomCeiling.mesh, bulbWire.mesh].forEach(object => scene.add(object));
-
 
 function updateBoxHelpers() {
     [backBorder, frontBorder, leftBorder, rightBorder].forEach(object => {
@@ -312,6 +328,7 @@ function frictionWithDesk(dt) { //  updates balls speed according to friction
 //* Render loop
 const computerClock = new THREE.Clock();
 const controls = new THREE.TrackballControls(camera, canvas);
+
 function render() {
     requestAnimationFrame(render);
 
@@ -324,4 +341,5 @@ function render() {
     controls.update();
     renderer.render(scene, camera);
 }
+
 render();
